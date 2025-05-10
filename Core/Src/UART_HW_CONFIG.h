@@ -44,8 +44,8 @@
 //#define UART1_HW_CTS_PIN  PIN_x
 //#define UART1_HW_RTS_PORT GPIOx_BASE_NS
 //#define UART1_HW_RTS_PIN  PIN_x
-//#define UART1_HW_DMA_RX_CHANNEL GPDMAx_Channelx
-//#define UART1_HW_DMA_TX_CHANNEL GPDMAx_Channelx
+#define UART1_HW_DMA_RX_CHANNEL GPDMA1_Channel0_BASE_NS
+#define UART1_HW_DMA_TX_CHANNEL GPDMA1_Channel1_BASE_NS
 //#define UART1_HW_CIRCULAR
 
 
@@ -59,8 +59,8 @@
 #define UART2_HW_CTS_PIN  PIN_0
 #define UART2_HW_RTS_PORT GPIOA_BASE_NS
 #define UART2_HW_RTS_PIN  PIN_1
-#define UART2_HW_DMA_RX_CHANNEL  GPDMA1_Channel0
-#define UART2_HW_DMA_TX_CHANNEL  GPDMA1_Channel1
+#define UART2_HW_DMA_RX_CHANNEL  GPDMA1_Channel2_BASE_NS
+#define UART2_HW_DMA_TX_CHANNEL  GPDMA1_Channel3_BASE_NS
 #define UART2_HW_CIRCULAR
 
 
@@ -74,8 +74,8 @@
 //#define UART3_HW_CTS_PIN  PIN_x
 //#define UART3_HW_RTS_PORT GPIOx_BASE_NS
 //#define UART3_HW_RTS_PIN  PIN_x
-//#define UART3_HW_DMA_RX_CHANNEL GPDMAx_Channelx
-//#define UART3_HW_DMA_TX_CHANNEL GPDMAx_Channelx
+//#define UART3_HW_DMA_RX_CHANNEL GPDMAx_Channelx_BASE_NS
+//#define UART3_HW_DMA_TX_CHANNEL GPDMAx_Channelx_BASE_NS
 //#define UART3_HW_CIRCULAR
 
 
@@ -89,8 +89,8 @@
 //#define UART4_HW_CTS_PIN  PIN_x
 //#define UART4_HW_RTS_PORT GPIOx_BASE_NS
 //#define UART4_HW_RTS_PIN  PIN_x
-//#define UART4_HW_DMA_RX_CHANNEL GPDMAx_Channelx
-//#define UART4_HW_DMA_TX_CHANNEL GPDMAx_Channelx
+//#define UART4_HW_DMA_RX_CHANNEL GPDMAx_Channelx_BASE_NS
+//#define UART4_HW_DMA_TX_CHANNEL GPDMAx_Channelx_BASE_NS
 //#define UART4_HW_CIRCULAR
 
 
@@ -103,8 +103,8 @@
 //#define UART5_HW_CTS_PIN  PIN_x
 //#define UART5_HW_RTS_PORT GPIOx_BASE_NS
 //#define UART5_HW_RTS_PIN  PIN_x
-#define UART5_HW_DMA_RX_CHANNEL GPDMA1_Channel2
-#define UART5_HW_DMA_TX_CHANNEL GPDMA1_Channel3
+#define UART5_HW_DMA_RX_CHANNEL GPDMA1_Channel4_BASE_NS
+#define UART5_HW_DMA_TX_CHANNEL GPDMA1_Channel5_BASE_NS
 #define UART5_HW_CIRCULAR
 
 //#define UART6_HW   // UART6 RX - PB6 PC7 PG9; TX - PB5 PC6 PG14
@@ -116,12 +116,13 @@
 //#define UART6_HW_CTS_PIN  PIN_x
 //#define UART6_HW_RTS_PORT GPIOx_BASE_NS
 //#define UART6_HW_RTS_PIN  PIN_x
-//#define UART6_HW_DMA_RX_CHANNEL GPDMAx_Channelx
-//#define UART6_HW_DMA_TX_CHANNEL GPDMAx_Channelx
+//#define UART6_HW_DMA_RX_CHANNEL GPDMAx_Channelx_BASE_NS
+//#define UART6_HW_DMA_TX_CHANNEL GPDMAx_Channelx_BASE_NS
 //#define UART6_HW_CIRCULAR
 
 
-#include "uart_gpio.h"
+#include "uart_gpio_check.h"
+#include "uart_dma.h"
 
 #else
 #error "This MCU not supported"

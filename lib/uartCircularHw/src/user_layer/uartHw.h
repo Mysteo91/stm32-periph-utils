@@ -12,13 +12,12 @@
   * @brief  Function for initialization UART
   * @note If dmaRx or dmaTx not using use NULL for this args
   * @param  NVIC_Priority This parameter can be from 0 .. 15. Where 0 - highest priority
-  * @param circularMode
   * @note   default priority for DMA Channel is DMA_LOW_PRIORITY_LOW_WEIGHT for change it use @rmtoll uartSetDMAPriority
   * @retval true if init done
   */
 
-bool uartHwInit(USART_TypeDef *usart, uint32_t baudrate, DMA_Channel_TypeDef* dmaRx, DMA_Channel_TypeDef* dmaTx, const
-                uint8_t NVIC_Priority, bool circularMode);
+bool uartHwInit(USART_TypeDef *usart, uint32_t baudrate, const
+                uint8_t NVIC_Priority);
 
 
 /**
