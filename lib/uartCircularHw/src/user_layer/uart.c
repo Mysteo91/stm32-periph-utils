@@ -1,7 +1,7 @@
 //
 // Created by user on 07.05.2025.
 //
-#include "uartHw.h"
+#include "uart.h"
 #include "uart_gpio_check.h"
 #include <string.h>
 #include "stm32h5xx_hal.h"
