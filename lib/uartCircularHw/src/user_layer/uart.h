@@ -33,4 +33,6 @@ bool uartInit(USART_TypeDef *usart, uint32_t baudrate, const
 
 bool uartSetDMAPriority(USART_TypeDef *usart, uint32_t DMA_CCR);
 
+bool uartStartReceive(USART_TypeDef *usart, const uint8_t* dst, uint16_t size);
+
 #endif //UARTCIRCULARHW_H

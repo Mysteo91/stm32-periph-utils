@@ -25,7 +25,7 @@
 #include "iwdg.h"
 #include "memorymap.h"
 #include "tim.h"
-#include "usart.h"
+#include "uart.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -62,7 +62,7 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+uint8_t buf[1024];
 /* USER CODE END 0 */
 
 /**
@@ -100,11 +100,14 @@ int main(void)
   MX_IWDG_Init();
   MX_TIM8_Init();
   MX_DCACHE1_Init();
-  MX_USART1_UART_Init();
+  //MX_USART1_UART_Init();
+  uartInit(USART1, 921600, 0);
+  uartInit(USART2, 921600, 0);
+  uartInit(UART5, 921600, 0);
   /* USER CODE BEGIN 2 */
-  HAL_UART_Transmit_DMA(&huart1, "hello\r\n", 7);
+  //HAL_UART_Transmit_DMA(&huart1, "hello\r\n", 7);
   /* USER CODE END 2 */
-
+  uartStartReceive(USART1, buf, 1024);
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)

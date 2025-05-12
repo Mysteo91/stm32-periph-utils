@@ -460,7 +460,11 @@ static uart_t *getUartByHalHandle(UART_HandleTypeDef *huart) {
 }
 
 
-
+bool uartStartReceive(USART_TypeDef *usart, const uint8_t* dst, uint16_t size)
+{
+    UART_HandleTypeDef* huart = getUartHalHandleByUSART(usart);
+    HAL_UARTEx_ReceiveToIdle_DMA(huart, dst, size );
+}
 
 
 bool uartInit(USART_TypeDef *usart, uint32_t baudrate, const
