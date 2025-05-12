@@ -29,10 +29,10 @@ typedef struct
     dma_t dma;
     void  (*userRxCallback)(uint8_t* dataStartAddress, uint8_t* dataContinuesAddress, uint16_t dataLen, uint16_t dataContinuesLen);
 
-}uartHw_t;
+}uart_t;
 
 #ifdef UART1_HW
-uartHw_t uart1 = {
+uart_t uart1 = {
     .huart.Instance = USART1,
     .huart.Init = {
             .Mode = UART1_HW_MODE,
@@ -58,7 +58,7 @@ uartHw_t uart1 = {
 #endif
 
 #ifdef UART2_HW
-uartHw_t uart2 = {
+uart_t uart2 = {
     .huart.Instance = USART2,
     .huart.Init = {
         .Mode = UART2_HW_MODE,
@@ -85,7 +85,7 @@ uartHw_t uart2 = {
 #endif
 
 #ifdef UART3_HW
-uartHw_t uart3 = {
+uart_t uart3 = {
 
     .huart.Instance = USART3,
     .huart.Init = {
@@ -112,7 +112,7 @@ uartHw_t uart3 = {
 #endif
 
 #ifdef UART4_HW
-uartHw_t uart4 = {
+uart_t uart4 = {
     .huart.Instance = USART4,
     .huart.Init = {
         .Mode = UART4_HW_MODE,
@@ -137,7 +137,7 @@ uartHw_t uart4 = {
 #endif
 
 #ifdef UART5_HW
-uartHw_t uart5 = {
+uart_t uart5 = {
     .huart.Instance = UART5,
     .huart.Init = {
         .Mode = UART5_HW_MODE,
@@ -162,7 +162,7 @@ uartHw_t uart5 = {
 #endif
 
 #ifdef UART6_HW
-uartHw_t uart6 = {
+uart_t uart6 = {
     .huart.Instance = USART6,
     .huart.Init = {
         .Mode = UART2_HW_MODE,
@@ -188,7 +188,7 @@ uartHw_t uart6 = {
 
 
 
-static void deinitUartHw(uartHw_t *uartHw);
+static void deinitUart(uart_t *uart);
 static void enableClkGPIO(GPIO_TypeDef *port);
 static void initUartGPIO(GPIO_TypeDef *port, uint32_t pin, uint8_t alternateFunction, uint8_t gpioSpeed);
 static void initDmaForUART(DMA_HandleTypeDef *dmaHandle, uint32_t DMA_REQUEST, uint32_t DMA_CCR);
@@ -423,7 +423,7 @@ static DMA_USING_FOR_Enum dmaUsingFor(DMA_Channel_TypeDef *dma) {
 }
 
 
-static uartHw_t *getUartHwByHalHandle(UART_HandleTypeDef *huart) {
+static uart_t *getUartByHalHandle(UART_HandleTypeDef *huart) {
 #ifdef UART1_HW
     if (&uart1.huart == huart) {
         return &uart1;
@@ -463,13 +463,13 @@ static uartHw_t *getUartHwByHalHandle(UART_HandleTypeDef *huart) {
 
 
 
-bool uartHwInit(USART_TypeDef *usart, uint32_t baudrate, const
+bool uartInit(USART_TypeDef *usart, uint32_t baudrate, const
                 uint8_t NVIC_Priority) {
     UART_HandleTypeDef* huart = getUartHalHandleByUSART(usart);
     if (huart == NULL) {
         return false;
     }
-    uartHw_t* uartHw = getUartHwByHalHandle(huart);
+    uart_t* uart = getUartByHalHandle(huart);
     huart->Instance = usart;
     huart->Init.BaudRate = baudrate;
     huart->Init.WordLength = UART_WORDLENGTH_8B;
@@ -519,10 +519,10 @@ bool uartHwInit(USART_TypeDef *usart, uint32_t baudrate, const
         HAL_NVIC_SetPriority(USART6_IRQn, NVIC_Priority, 0);
     }
 
-    if (uartHw->dma.dmaHandleRx.Instance != NULL)
-        setPriorityDMA(uartHw->dma.dmaHandleRx.Instance, NVIC_Priority);
-    if (uartHw->dma.dmaHandleTx.Instance != NULL)
-        setPriorityDMA(uartHw->dma.dmaHandleTx.Instance, NVIC_Priority);
+    if (uart->dma.dmaHandleRx.Instance != NULL)
+        setPriorityDMA(uart->dma.dmaHandleRx.Instance, NVIC_Priority);
+    if (uart->dma.dmaHandleTx.Instance != NULL)
+        setPriorityDMA(uart->dma.dmaHandleTx.Instance, NVIC_Priority);
 
     return true;
 }
@@ -533,7 +533,7 @@ bool uartSetDMAPriority(USART_TypeDef *usart, uint32_t DMA_CCR) {
     if (huart == NULL) {
         return false;
     }
-    uartHw_t* uartHw = getUartHwByHalHandle(huart);
+    uart_t* uart = getUartByHalHandle(huart);
     if (huart->hdmarx != NULL) {
         if (huart->hdmarx->State != HAL_UART_STATE_RESET) {
             if ( HAL_DMA_DeInit(huart->hdmarx) != HAL_OK ) {
@@ -541,13 +541,13 @@ bool uartSetDMAPriority(USART_TypeDef *usart, uint32_t DMA_CCR) {
             }
         }
     }
-    if (uartHw->dma.dmaHandleRx.InitLinkedList.LinkedListMode == DMA_LINKEDLIST_CIRCULAR) {
-        uartHw->dma.dmaHandleRx.InitLinkedList.Priority = DMA_CCR;
-        HAL_DMAEx_List_Init(&uartHw->dma.dmaHandleRx);
+    if (uart->dma.dmaHandleRx.InitLinkedList.LinkedListMode == DMA_LINKEDLIST_CIRCULAR) {
+        uart->dma.dmaHandleRx.InitLinkedList.Priority = DMA_CCR;
+        HAL_DMAEx_List_Init(&uart->dma.dmaHandleRx);
     }
     else {
-        uartHw->dma.dmaHandleRx.Init.Priority = DMA_CCR;
-        HAL_DMA_Init(&uartHw->dma.dmaHandleRx);
+        uart->dma.dmaHandleRx.Init.Priority = DMA_CCR;
+        HAL_DMA_Init(&uart->dma.dmaHandleRx);
     }
 
 }
@@ -701,53 +701,53 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart) {
 
 #endif
 
-    uartHw_t* uartHw = getUartHwByHalHandle(huart);
-    if (uartHw->dma.dmaHandleRx.Instance != NULL) {
+    uart_t* uart = getUartByHalHandle(huart);
+    if (uart->dma.dmaHandleRx.Instance != NULL) {
         uint32_t dmaRequest = 0;
         //@todo in next release need to detectd GPDMA1 or GPDMA2 , because in current MCU GPDMA1_REQUEST equal GPDMA2_REQUEST but in next mcu its can be differents.
-        if (uartHw->huart.Instance == USART1)
+        if (uart->huart.Instance == USART1)
             dmaRequest = GPDMA1_REQUEST_USART1_RX;
-        else if (uartHw->huart.Instance == USART2)
+        else if (uart->huart.Instance == USART2)
             dmaRequest = GPDMA1_REQUEST_USART2_RX;
-        else if (uartHw->huart.Instance == USART3)
+        else if (uart->huart.Instance == USART3)
             dmaRequest = GPDMA1_REQUEST_USART3_RX;
-        else if (uartHw->huart.Instance == UART4)
+        else if (uart->huart.Instance == UART4)
             dmaRequest = GPDMA1_REQUEST_UART4_RX;
-        else if (uartHw->huart.Instance == UART5)
+        else if (uart->huart.Instance == UART5)
             dmaRequest = GPDMA1_REQUEST_UART5_RX;
-        else if (uartHw->huart.Instance == USART6)
+        else if (uart->huart.Instance == USART6)
             dmaRequest = GPDMA1_REQUEST_USART6_RX;
 
-        if (uartHw->dma.dmaHandleRx.Init.Mode == DMA_LINKEDLIST_CIRCULAR) {
-            initDmaCircularForUART(&uartHw->dma.dmaHandleRx, dmaRequest, 0);
+        if (uart->dma.dmaHandleRx.Init.Mode == DMA_LINKEDLIST_CIRCULAR) {
+            initDmaCircularForUART(&uart->dma.dmaHandleRx, dmaRequest, 0);
         }
         else {
-            initDmaForUART(&uartHw->dma.dmaHandleRx, dmaRequest, 0);
+            initDmaForUART(&uart->dma.dmaHandleRx, dmaRequest, 0);
         }
     }
-    if (uartHw->dma.dmaHandleTx.Instance != NULL) {
+    if (uart->dma.dmaHandleTx.Instance != NULL) {
         uint32_t dmaRequest = 0;
         //@todo in next release need to detectd GPDMA1 or GPDMA2 , because in current MCU GPDMA1_REQUEST equal GPDMA2_REQUEST but in next mcu its can be differents.
-        if (uartHw->huart.Instance == USART1)
+        if (uart->huart.Instance == USART1)
             dmaRequest = GPDMA1_REQUEST_USART1_TX;
-        else if (uartHw->huart.Instance == USART2)
+        else if (uart->huart.Instance == USART2)
             dmaRequest = GPDMA1_REQUEST_USART2_TX;
-        else if (uartHw->huart.Instance == USART3)
+        else if (uart->huart.Instance == USART3)
             dmaRequest = GPDMA1_REQUEST_USART3_TX;
-        else if (uartHw->huart.Instance == UART4)
+        else if (uart->huart.Instance == UART4)
             dmaRequest = GPDMA1_REQUEST_UART4_TX;
-        else if (uartHw->huart.Instance == UART5)
+        else if (uart->huart.Instance == UART5)
             dmaRequest = GPDMA1_REQUEST_UART5_TX;
-        else if (uartHw->huart.Instance == USART6)
+        else if (uart->huart.Instance == USART6)
             dmaRequest = GPDMA1_REQUEST_USART6_TX;
 
-        initDmaForUART(&uartHw->dma.dmaHandleTx, dmaRequest, 0);
+        initDmaForUART(&uart->dma.dmaHandleTx, dmaRequest, 0);
     }
 
 }
 
-void deinitUartHw(uartHw_t *uartHw) {
-    if (uartHw == NULL)
+void deinitUart(uart_t *uart) {
+    if (uart == NULL)
         return;
 }
 
@@ -850,7 +850,7 @@ void initDmaCircularForUART(DMA_HandleTypeDef *dmaHandle, uint32_t DMA_REQUEST, 
     dmaHandle->Init.Request = DMA_REQUEST;
     dmaHandle->Init.BlkHWRequest = DMA_BREQ_SINGLE_BURST;
     UART_HandleTypeDef* huart = getUartHalHandleByDMA(dmaHandle->Instance);
-    uartHw_t* uartHw = getUartHwByHalHandle(huart);
+    uart_t* uart = getUartByHalHandle(huart);
     DMA_NodeConfTypeDef NodeConfig= {0};
 
     NodeConfig.NodeType = DMA_GPDMA_LINEAR_NODE;
@@ -869,21 +869,21 @@ void initDmaCircularForUART(DMA_HandleTypeDef *dmaHandle, uint32_t DMA_REQUEST, 
     NodeConfig.TriggerConfig.TriggerPolarity = DMA_TRIG_POLARITY_MASKED;
     NodeConfig.DataHandlingConfig.DataExchange = DMA_EXCHANGE_NONE;
     NodeConfig.DataHandlingConfig.DataAlignment = DMA_DATA_RIGHTALIGN_ZEROPADDED;
-    if (HAL_DMAEx_List_BuildNode(&NodeConfig, &uartHw->dma.nodeRx) != HAL_OK)
+    if (HAL_DMAEx_List_BuildNode(&NodeConfig, &uart->dma.nodeRx) != HAL_OK)
     {
       while (1) {
           //@todo ERROR handler
       }
     }
 
-    if (HAL_DMAEx_List_InsertNode(&uartHw->dma.listRx, NULL, &uartHw->dma.nodeRx) != HAL_OK)
+    if (HAL_DMAEx_List_InsertNode(&uart->dma.listRx, NULL, &uart->dma.nodeRx) != HAL_OK)
     {
         while (1) {
             //@todo ERROR handler
         }
     }
 
-    if (HAL_DMAEx_List_SetCircularMode(&uartHw->dma.listRx) != HAL_OK)
+    if (HAL_DMAEx_List_SetCircularMode(&uart->dma.listRx) != HAL_OK)
     {
         while (1) {
             //@todo ERROR handler
@@ -903,7 +903,7 @@ void initDmaCircularForUART(DMA_HandleTypeDef *dmaHandle, uint32_t DMA_REQUEST, 
         }
     }
 
-    if (HAL_DMAEx_List_LinkQ(dmaHandle, &uartHw->dma.listRx) != HAL_OK)
+    if (HAL_DMAEx_List_LinkQ(dmaHandle, &uart->dma.listRx) != HAL_OK)
     {
         while (1) {
             //@todo ERROR handler
@@ -985,4 +985,11 @@ void setPriorityDMA(DMA_Channel_TypeDef *dmaChannel, uint8_t priority) {
         HAL_NVIC_SetPriority(GPDMA2_Channel7_IRQn, priority, 0);
         HAL_NVIC_EnableIRQ(GPDMA2_Channel7_IRQn);
     }
+}
+
+void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size) {
+
+    uart_t* uart = getUartByHalHandle(huart);
+
+
 }

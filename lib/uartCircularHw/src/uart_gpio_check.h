@@ -8,10 +8,10 @@
 #include <stdbool.h>
 
 
-#if defined(UARTHW_APP_CONFIG)
-#include UARTHW_APP_CONFIG
+#if defined(UART_APP_CONFIG)
+#include UART_APP_CONFIG
 #else
-#error "please define UARTHW_APP_CONFIG path"
+#error "please define UART_APP_CONFIG path"
 #endif
 
 #if STM32H523xx

@@ -16,7 +16,7 @@
   * @retval true if init done
   */
 
-bool uartHwInit(USART_TypeDef *usart, uint32_t baudrate, const
+bool uartInit(USART_TypeDef *usart, uint32_t baudrate, const
                 uint8_t NVIC_Priority);
 
 

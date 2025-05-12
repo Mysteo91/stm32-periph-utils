@@ -11,7 +11,7 @@ file(GLOB_RECURSE UART_HW_SOURCES
 )
 
 add_library(uart_hw_hal_lib STATIC ${UART_HW_SOURCES})
-target_compile_definitions(uart_hw_hal_lib PUBLIC UARTHW_APP_CONFIG="${UART_HW_CONFIG_FILE}")
+target_compile_definitions(uart_hw_hal_lib PUBLIC UART_APP_CONFIG="${UART_HW_CONFIG_FILE}")
 target_include_directories(uart_hw_hal_lib
 
         PRIVATE  src

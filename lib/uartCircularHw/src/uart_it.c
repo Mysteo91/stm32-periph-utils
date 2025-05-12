@@ -6,10 +6,10 @@
 #include "stm32h5xx.h"
 #endif
 
-#if defined(UARTHW_APP_CONFIG)
-#include UARTHW_APP_CONFIG
+#if defined(UART_APP_CONFIG)
+#include UART_APP_CONFIG
 #else
-#error "please define UARTHW_APP_CONFIG path"
+#error "please define UART_APP_CONFIG path"
 #endif
 
 extern UART_HandleTypeDef* getUartHalHandleByUSART (USART_TypeDef* usart);
