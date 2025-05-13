@@ -5,6 +5,7 @@
 #include "uart_gpio_check.h"
 #include <string.h>
 #include "stm32h5xx_hal.h"
+#include "uart-it.h"
 
 
 typedef enum {

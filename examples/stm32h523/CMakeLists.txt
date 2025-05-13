@@ -9,22 +9,18 @@ project(stm32_periph_util C CXX ASM)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 11)
 
-#Uncomment for hardware floating point
-#add_compile_definitions(ARM_MATH_CM4;ARM_MATH_MATRIX_CHECK;ARM_MATH_ROUNDING)
-#add_compile_options(-mfloat-abi=hard -mfpu=fpv4-sp-d16)
-#add_link_options(-mfloat-abi=hard -mfpu=fpv4-sp-d16)
+include_directories(Core/HAL_CONFIG Core/Inc USBX/App USBX/Target Drivers/STM32H5xx_HAL_Driver/Inc Drivers/STM32H5xx_HAL_Driver/Inc/Legacy Drivers/CMSIS/Device/ST/STM32H5xx/Include Middlewares/ST/usbx/common/core/inc Middlewares/ST/usbx/ports/generic/inc Drivers/CMSIS/Include)
 
-#Uncomment for software floating point
-#add_compile_options(-mfloat-abi=soft)
+add_definitions(-DUSE_HAL_DRIVER -DSTM32H523xx)
 
-add_compile_options(-mcpu=cortex-m33 -mthumb -mthumb-interwork)
-add_compile_options(-ffunction-sections -fdata-sections -fno-common -fmessage-length=0)
+file(GLOB_RECURSE SOURCES  "Core/Src/*.*" "Middlewares/*.*" "Drivers/*.*")
 
-# uncomment to mitigate c++17 absolute addresses warnings
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-register")
+add_link_options(-Wl,-gc-sections,--print-memory-usage,-Map=${PROJECT_BINARY_DIR}/${PROJECT_NAME}.map)
+add_link_options(-mcpu=cortex-m33 -mthumb -mthumb-interwork)
+add_link_options(-T ${LINKER_SCRIPT})
 
-# Enable assembler files preprocessing
-add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-x$<SEMICOLON>assembler-with-cpp>)
+set (UART_HW_CONFIG_FILE  ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/UART_HW_CONFIG.h)
+
 
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
     message(STATUS "Maximum optimization for speed")
@@ -40,25 +36,10 @@ else ()
     add_compile_options(-Og -g)
 endif ()
 
-include_directories(Core/HAL_CONFIG Core/Inc USBX/App USBX/Target Drivers/STM32H5xx_HAL_Driver/Inc Drivers/STM32H5xx_HAL_Driver/Inc/Legacy Drivers/CMSIS/Device/ST/STM32H5xx/Include Middlewares/ST/usbx/common/core/inc Middlewares/ST/usbx/ports/generic/inc Drivers/CMSIS/Include)
-
-add_definitions(-DUSE_HAL_DRIVER -DSTM32H523xx)
-
-file(GLOB_RECURSE SOURCES  "Core/*.*" "Middlewares/*.*" "Drivers/*.*")
-
-add_link_options(-Wl,-gc-sections,--print-memory-usage,-Map=${PROJECT_BINARY_DIR}/${PROJECT_NAME}.map)
-add_link_options(-mcpu=cortex-m33 -mthumb -mthumb-interwork)
-add_link_options(-T ${LINKER_SCRIPT})
-
-set (UART_HW_CONFIG_FILE  ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/UART_HW_CONFIG.h)
-set(STM32_STARTUP_FILE ${CMAKE_CURRENT_SOURCE_DIR}/Core/Startup/startup_stm32h523ceux.s)
-
-
-
 
 add_executable(${PROJECT_NAME}.elf ${SOURCES} ${LINKER_SCRIPT})
 
-target_link_libraries(${PROJECT_NAME}.elf PRIVATE  -Wl,--whole-archive uart_hw_hal_lib -Wl,--no-whole-archive  STM32_Drivers)
+target_link_libraries(${PROJECT_NAME}.elf PRIVATE STM32_Drivers  -Wl,--whole-archive uart_hw_hal_lib -Wl,--no-whole-archive  startup)
 
 set(HEX_FILE ${PROJECT_BINARY_DIR}/${PROJECT_NAME}.hex)
 set(BIN_FILE ${PROJECT_BINARY_DIR}/${PROJECT_NAME}.bin)
