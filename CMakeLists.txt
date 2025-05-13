@@ -62,12 +62,13 @@ add_link_options(-mcpu=cortex-m33 -mthumb -mthumb-interwork)
 add_link_options(-T ${LINKER_SCRIPT})
 
 set (UART_HW_CONFIG_FILE  ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/UART_HW_CONFIG.h)
+set(STM32_STARTUP_FILE ${CMAKE_CURRENT_SOURCE_DIR}/Core/Startup/startup_stm32h523ceux.s)
+add_subdirectory(lib/uartLib)
 
-add_subdirectory(lib/uartCircularHw)
 
 add_executable(${PROJECT_NAME}.elf ${SOURCES} ${LINKER_SCRIPT})
 
-target_link_libraries(${PROJECT_NAME}.elf PRIVATE uart_hw_hal_lib)
+target_link_libraries(${PROJECT_NAME}.elf PRIVATE  -Wl,--whole-archive uart_hw_hal_lib -Wl,--no-whole-archive )
 
 set(HEX_FILE ${PROJECT_BINARY_DIR}/${PROJECT_NAME}.hex)
 set(BIN_FILE ${PROJECT_BINARY_DIR}/${PROJECT_NAME}.bin)

@@ -23,7 +23,6 @@
 #include "gpdma.h"
 #include "icache.h"
 #include "iwdg.h"
-#include "memorymap.h"
 #include "tim.h"
 #include "uart.h"
 #include "gpio.h"
@@ -63,6 +62,14 @@ void SystemClock_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 uint8_t buf[1024];
+
+void modemRxDataCb (uint8_t* dataStartAddress,uint16_t dataLen,  uint8_t* dataContinuesAddress,  uint16_t dataContinuesLen) {
+
+}
+
+void modemUartErrorCb (void) {
+
+}
 /* USER CODE END 0 */
 
 /**
@@ -101,9 +108,8 @@ int main(void)
   MX_TIM8_Init();
   MX_DCACHE1_Init();
   //MX_USART1_UART_Init();
-  uartInit(USART1, 921600, 0);
-  uartInit(USART2, 921600, 0);
-  uartInit(UART5, 921600, 0);
+  uartInit(USART1, 921600, 0, modemRxDataCb, modemUartErrorCb);
+
   /* USER CODE BEGIN 2 */
   //HAL_UART_Transmit_DMA(&huart1, "hello\r\n", 7);
   /* USER CODE END 2 */

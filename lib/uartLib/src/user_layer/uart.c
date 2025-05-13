@@ -12,40 +12,40 @@ typedef enum {
     DMA_USING_FOR_RX,
     DMA_USING_FOR_TX
 
-}DMA_USING_FOR_Enum;
+} DMA_USING_FOR_Enum;
 
 typedef struct {
-    DMA_HandleTypeDef  dmaHandleRx;
-    DMA_HandleTypeDef  dmaHandleTx;
-    DMA_NodeTypeDef    nodeRx;
-    DMA_QListTypeDef   listRx;
-}dma_t;
+    DMA_HandleTypeDef dmaHandleRx;
+    DMA_HandleTypeDef dmaHandleTx;
+    DMA_NodeTypeDef nodeRx;
+    DMA_QListTypeDef listRx;
+} dma_t;
 
-typedef struct
-{
+typedef struct {
     UART_HandleTypeDef huart;
-    uint8_t* lastWrtPnt;
-    uint8_t countOverflowed;
+    uint8_t *lastWrtPnt;
+    uint8_t countTC;
     dma_t dma;
-    void  (*userRxCallback)(uint8_t* dataStartAddress, uint8_t* dataContinuesAddress, uint16_t dataLen, uint16_t dataContinuesLen);
+    uartRxUserDataCb dataCb;
+    uartRxUserErrorCb error_cb;
 
-}uart_t;
+} uart_t;
 
 #ifdef UART1_HW
 uart_t uart1 = {
     .huart.Instance = USART1,
     .huart.Init = {
-            .Mode = UART1_HW_MODE,
-            .HwFlowCtl = UART1_HW_FLOW_CONTROL
+        .Mode = UART1_HW_MODE,
+        .HwFlowCtl = UART1_HW_FLOW_CONTROL
     },
 #ifdef UART1_HW_DMA_RX_CHANNEL
     .dma.dmaHandleRx = {
         .Instance = (DMA_Channel_TypeDef *) UART1_HW_DMA_RX_CHANNEL,
-        #ifdef UART1_HW_CIRCULAR
+#ifdef UART1_HW_CIRCULAR
         .Init.Mode = DMA_LINKEDLIST_CIRCULAR
-        #else
+#else
         .Init.Mode = DMA_NORMAL
-        #endif
+#endif
     },
 #endif
 
@@ -62,16 +62,16 @@ uart_t uart2 = {
     .huart.Instance = USART2,
     .huart.Init = {
         .Mode = UART2_HW_MODE,
-        .HwFlowCtl =  UART2_HW_FLOW_CONTROL
+        .HwFlowCtl = UART2_HW_FLOW_CONTROL
     },
 #ifdef UART2_HW_DMA_RX_CHANNEL
     .dma.dmaHandleRx = {
         .Instance = (DMA_Channel_TypeDef *) UART2_HW_DMA_RX_CHANNEL,
-        #ifdef UART2_HW_CIRCULAR
+#ifdef UART2_HW_CIRCULAR
         .Init.Mode = DMA_LINKEDLIST_CIRCULAR
-        #else
+#else
         .Init.Mode = DMA_NORMAL
-        #endif
+#endif
 
     },
 
@@ -95,11 +95,11 @@ uart_t uart3 = {
 #ifdef UART3_HW_DMA_RX_CHANNEL
     .dma.dmaHandleRx = {
         .Instance = (DMA_Channel_TypeDef *) UART3_HW_DMA_RX_CHANNEL,
-        #ifdef UART3_HW_CIRCULAR
+#ifdef UART3_HW_CIRCULAR
         .Init.Mode = DMA_LINKEDLIST_CIRCULAR
-        #else
+#else
         .Init.Mode = DMA_NORMAL
-        #endif
+#endif
     },
 #endif
 #ifdef UART3_HW_DMA_TX_CHANNEL
@@ -121,11 +121,11 @@ uart_t uart4 = {
 #ifdef UART4_HW_DMA_RX_CHANNEL
     .dma.dmaHandleRx = {
         .Instance = (DMA_Channel_TypeDef *) UART4_HW_DMA_RX_CHANNEL,
-        #ifdef UART4_HW_CIRCULAR
+#ifdef UART4_HW_CIRCULAR
         .Init.Mode = DMA_LINKEDLIST_CIRCULAR
-        #else
+#else
         .Init.Mode = DMA_NORMAL
-        #endif
+#endif
     },
 #endif
 #ifdef UART4_HW_DMA_TX_CHANNEL
@@ -146,11 +146,11 @@ uart_t uart5 = {
 #ifdef UART5_HW_DMA_RX_CHANNEL
     .dma.dmaHandleRx = {
         .Instance = (DMA_Channel_TypeDef *) UART5_HW_DMA_RX_CHANNEL,
-        #ifdef UART5_HW_CIRCULAR
+#ifdef UART5_HW_CIRCULAR
         .Init.Mode = DMA_LINKEDLIST_CIRCULAR
-        #else
+#else
         .Init.Mode = DMA_NORMAL
-        #endif
+#endif
     },
 #endif
 #ifdef UART5_HW_DMA_TX_CHANNEL
@@ -171,11 +171,11 @@ uart_t uart6 = {
 #ifdef UART6_HW_DMA_RX_CHANNEL
     .dma.dmaHandleRx = {
         .Instance =  (DMA_Channel_TypeDef *) UART6_HW_DMA_RX_CHANNEL,
-        #ifdef UART6_HW_CIRCULAR
+#ifdef UART6_HW_CIRCULAR
         .Init.Mode = DMA_LINKEDLIST_CIRCULAR
-        #else
+#else
         .Init.Mode = DMA_NORMAL
-        #endif
+#endif
     },
 #endif
 #ifdef UART6_HW_DMA_TX_CHANNEL
@@ -187,14 +187,15 @@ uart_t uart6 = {
 #endif
 
 
-
 static void deinitUart(uart_t *uart);
 static void enableClkGPIO(GPIO_TypeDef *port);
 static void initUartGPIO(GPIO_TypeDef *port, uint32_t pin, uint8_t alternateFunction, uint8_t gpioSpeed);
 static void initDmaForUART(DMA_HandleTypeDef *dmaHandle, uint32_t DMA_REQUEST, uint32_t DMA_CCR);
 static void initDmaCircularForUART(DMA_HandleTypeDef *dmaHandle, uint32_t DMA_REQUEST, uint32_t DMA_CCR);
-static void setPriorityDMA(DMA_Channel_TypeDef* dmaChannel, uint8_t priority);
-DMA_HandleTypeDef* getDMAHalHandleByDMA (DMA_Channel_TypeDef *dma);
+static void setPriorityDMA(DMA_Channel_TypeDef *dmaChannel, uint8_t priority);
+static void resetUART(uart_t *uart);
+
+DMA_HandleTypeDef *getDMAHalHandleByDMA(DMA_Channel_TypeDef *dma);
 
 UART_HandleTypeDef *getUartHalHandleByUSART(USART_TypeDef *usart) {
 
@@ -232,10 +233,10 @@ UART_HandleTypeDef *getUartHalHandleByUSART(USART_TypeDef *usart) {
     return NULL;
 }
 
-static UART_HandleTypeDef* getUartHalHandleByDMA (DMA_Channel_TypeDef *dma) {
+static UART_HandleTypeDef *getUartHalHandleByDMA(DMA_Channel_TypeDef *dma) {
 
 #ifdef UART1_HW
-    if(uart1.dma.dmaHandleRx.Instance == dma) {
+    if (uart1.dma.dmaHandleRx.Instance == dma) {
         return &uart1.huart;
     }
     if (uart1.dma.dmaHandleTx.Instance == dma) {
@@ -243,7 +244,7 @@ static UART_HandleTypeDef* getUartHalHandleByDMA (DMA_Channel_TypeDef *dma) {
     }
 #endif
 #ifdef UART2_HW
-    if(uart2.dma.dmaHandleRx.Instance == dma) {
+    if (uart2.dma.dmaHandleRx.Instance == dma) {
         return &uart2.huart;
     }
     if (uart2.dma.dmaHandleTx.Instance == dma) {
@@ -267,7 +268,7 @@ static UART_HandleTypeDef* getUartHalHandleByDMA (DMA_Channel_TypeDef *dma) {
     }
 #endif
 #ifdef UART5_HW
-    if(uart5.dma.dmaHandleRx.Instance == dma) {
+    if (uart5.dma.dmaHandleRx.Instance == dma) {
         return &uart5.huart;
     }
     if (uart5.dma.dmaHandleTx.Instance == dma) {
@@ -287,16 +288,16 @@ static UART_HandleTypeDef* getUartHalHandleByDMA (DMA_Channel_TypeDef *dma) {
     }
 }
 
-DMA_HandleTypeDef* getDMAHalHandleByDMA (DMA_Channel_TypeDef *dma) {
+DMA_HandleTypeDef *getDMAHalHandleByDMA(DMA_Channel_TypeDef *dma) {
 
 #ifdef UART1_HW_DMA_RX_CHANNEL
-    if(uart1.dma.dmaHandleRx.Instance == dma) {
+    if (uart1.dma.dmaHandleRx.Instance == dma) {
         return &uart1.dma.dmaHandleRx;
     }
 #endif
 
 #ifdef UART2_HW_DMA_RX_CHANNEL
-    if(uart2.dma.dmaHandleRx.Instance == dma) {
+    if (uart2.dma.dmaHandleRx.Instance == dma) {
         return &uart2.dma.dmaHandleRx;
     }
 #endif
@@ -314,9 +315,9 @@ DMA_HandleTypeDef* getDMAHalHandleByDMA (DMA_Channel_TypeDef *dma) {
 #endif
 
 #ifdef UART5_HW_DMA_RX_CHANNEL
-        if(uart5.dma.dmaHandleRx.Instance == dma) {
-            return &uart5.dma.dmaHandleRx;
-        }
+    if (uart5.dma.dmaHandleRx.Instance == dma) {
+        return &uart5.dma.dmaHandleRx;
+    }
 #endif
 
 #ifdef UART6_HW_DMA_RX_CHANNEL
@@ -326,13 +327,13 @@ DMA_HandleTypeDef* getDMAHalHandleByDMA (DMA_Channel_TypeDef *dma) {
 #endif
 
 #ifdef UART1_HW_DMA_TX_CHANNEL
-    if(uart1.dma.dmaHandleTx.Instance == dma) {
+    if (uart1.dma.dmaHandleTx.Instance == dma) {
         return &uart1.dma.dmaHandleTx;
     }
 #endif
 
 #ifdef UART2_HW_DMA_TX_CHANNEL
-    if(uart2.dma.dmaHandleTx.Instance == dma) {
+    if (uart2.dma.dmaHandleTx.Instance == dma) {
         return &uart2.dma.dmaHandleTx;
     }
 #endif
@@ -350,7 +351,7 @@ DMA_HandleTypeDef* getDMAHalHandleByDMA (DMA_Channel_TypeDef *dma) {
 #endif
 
 #ifdef UART5_HW_DMA_TX_CHANNEL
-    if(uart5.dma.dmaHandleTx.Instance == dma) {
+    if (uart5.dma.dmaHandleTx.Instance == dma) {
         return &uart5.dma.dmaHandleTx;
     }
 #endif
@@ -367,11 +368,10 @@ DMA_HandleTypeDef* getDMAHalHandleByDMA (DMA_Channel_TypeDef *dma) {
 }
 
 
-
 static DMA_USING_FOR_Enum dmaUsingFor(DMA_Channel_TypeDef *dma) {
 
 #ifdef UART1_HW
-    if(uart1.dma.dmaHandleRx.Instance == dma) {
+    if (uart1.dma.dmaHandleRx.Instance == dma) {
         return DMA_USING_FOR_RX;
     }
     if (uart1.dma.dmaHandleTx.Instance == dma) {
@@ -379,7 +379,7 @@ static DMA_USING_FOR_Enum dmaUsingFor(DMA_Channel_TypeDef *dma) {
     }
 #endif
 #ifdef UART2_HW
-    if(uart2.dma.dmaHandleRx.Instance == dma) {
+    if (uart2.dma.dmaHandleRx.Instance == dma) {
         return DMA_USING_FOR_RX;
     }
     if (uart2.dma.dmaHandleTx.Instance == dma) {
@@ -403,7 +403,7 @@ static DMA_USING_FOR_Enum dmaUsingFor(DMA_Channel_TypeDef *dma) {
     }
 #endif
 #ifdef UART5_HW
-    if(uart5.dma.dmaHandleRx.Instance == dma) {
+    if (uart5.dma.dmaHandleRx.Instance == dma) {
         return DMA_USING_FOR_RX;
     }
     if (uart5.dma.dmaHandleTx.Instance == dma) {
@@ -460,20 +460,35 @@ static uart_t *getUartByHalHandle(UART_HandleTypeDef *huart) {
 }
 
 
-bool uartStartReceive(USART_TypeDef *usart, const uint8_t* dst, uint16_t size)
-{
+bool uartStartReceive(USART_TypeDef *usart, const uint8_t *dst, uint16_t size) {
+    UART_HandleTypeDef *huart = getUartHalHandleByUSART(usart);
+    if (huart->hdmarx->Init.Mode == DMA_NORMAL) {
+        __HAL_DMA_DISABLE_IT(huart->hdmarx, DMA_IT_HT);
+        return HAL_UART_Receive_DMA(huart, (uint8_t *) dst, size) == HAL_OK;
+    } else {
+        return HAL_UARTEx_ReceiveToIdle_DMA(huart, (uint8_t *) dst, size) == HAL_OK;
+    }
+}
+
+bool uartStartTransmit(USART_TypeDef *usart, const uint8_t *dst, uint16_t size) {
+    UART_HandleTypeDef *huart = getUartHalHandleByUSART(usart);
+
+}
+
+HAL_UART_StateTypeDef uartGetState(USART_TypeDef *usart) {
     UART_HandleTypeDef* huart = getUartHalHandleByUSART(usart);
-    HAL_UARTEx_ReceiveToIdle_DMA(huart, dst, size );
+    return HAL_UART_GetState(huart);
 }
 
 
-bool uartInit(USART_TypeDef *usart, uint32_t baudrate, const
-                uint8_t NVIC_Priority) {
-    UART_HandleTypeDef* huart = getUartHalHandleByUSART(usart);
+bool uartInit(USART_TypeDef *usart, uint32_t baudrate, uint8_t NVIC_Priority, uartRxUserDataCb dataCb, uartRxUserErrorCb errorCb) {
+    UART_HandleTypeDef *huart = getUartHalHandleByUSART(usart);
     if (huart == NULL) {
         return false;
     }
-    uart_t* uart = getUartByHalHandle(huart);
+    uart_t *uart = getUartByHalHandle(huart);
+    uart->dataCb = dataCb;
+    uart->error_cb = errorCb;
     huart->Instance = usart;
     huart->Init.BaudRate = baudrate;
     huart->Init.WordLength = UART_WORDLENGTH_8B;
@@ -501,24 +516,19 @@ bool uartInit(USART_TypeDef *usart, uint32_t baudrate, const
     if (usart == USART1) {
         HAL_NVIC_EnableIRQ(USART1_IRQn);
         HAL_NVIC_SetPriority(USART1_IRQn, NVIC_Priority, 0);
-    }
-    else if (usart == USART2) {
+    } else if (usart == USART2) {
         HAL_NVIC_EnableIRQ(USART2_IRQn);
         HAL_NVIC_SetPriority(USART2_IRQn, NVIC_Priority, 0);
-    }
-    else if (usart == USART3) {
+    } else if (usart == USART3) {
         HAL_NVIC_EnableIRQ(USART3_IRQn);
         HAL_NVIC_SetPriority(USART3_IRQn, NVIC_Priority, 0);
-    }
-    else if (usart == UART4) {
+    } else if (usart == UART4) {
         HAL_NVIC_EnableIRQ(UART4_IRQn);
         HAL_NVIC_SetPriority(UART4_IRQn, NVIC_Priority, 0);
-    }
-    else if (usart == UART5) {
+    } else if (usart == UART5) {
         HAL_NVIC_EnableIRQ(UART5_IRQn);
         HAL_NVIC_SetPriority(UART5_IRQn, NVIC_Priority, 0);
-    }
-    else if (usart == USART6) {
+    } else if (usart == USART6) {
         HAL_NVIC_EnableIRQ(USART6_IRQn);
         HAL_NVIC_SetPriority(USART6_IRQn, NVIC_Priority, 0);
     }
@@ -533,14 +543,14 @@ bool uartInit(USART_TypeDef *usart, uint32_t baudrate, const
 
 bool uartSetDMAPriority(USART_TypeDef *usart, uint32_t DMA_CCR) {
 
-    UART_HandleTypeDef* huart = getUartHalHandleByUSART(usart);
+    UART_HandleTypeDef *huart = getUartHalHandleByUSART(usart);
     if (huart == NULL) {
         return false;
     }
-    uart_t* uart = getUartByHalHandle(huart);
+    uart_t *uart = getUartByHalHandle(huart);
     if (huart->hdmarx != NULL) {
         if (huart->hdmarx->State != HAL_UART_STATE_RESET) {
-            if ( HAL_DMA_DeInit(huart->hdmarx) != HAL_OK ) {
+            if (HAL_DMA_DeInit(huart->hdmarx) != HAL_OK) {
                 return false;
             }
         }
@@ -548,8 +558,7 @@ bool uartSetDMAPriority(USART_TypeDef *usart, uint32_t DMA_CCR) {
     if (uart->dma.dmaHandleRx.InitLinkedList.LinkedListMode == DMA_LINKEDLIST_CIRCULAR) {
         uart->dma.dmaHandleRx.InitLinkedList.Priority = DMA_CCR;
         HAL_DMAEx_List_Init(&uart->dma.dmaHandleRx);
-    }
-    else {
+    } else {
         uart->dma.dmaHandleRx.Init.Priority = DMA_CCR;
         HAL_DMA_Init(&uart->dma.dmaHandleRx);
     }
@@ -564,8 +573,9 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart) {
         __HAL_RCC_USART1_CLK_ENABLE();
 
 #ifdef UART1_HW_RX_PIN
-        enableClkGPIO((GPIO_TypeDef *)UART1_HW_RX_PORT);
-        initUartGPIO((GPIO_TypeDef *)UART1_HW_RX_PORT, UART1_HW_RX_PIN, UART1_HW_RX_ALTERNATE_FUNC, GPIO_SPEED_FREQ_LOW);
+        enableClkGPIO((GPIO_TypeDef *) UART1_HW_RX_PORT);
+        initUartGPIO((GPIO_TypeDef *) UART1_HW_RX_PORT, UART1_HW_RX_PIN, UART1_HW_RX_ALTERNATE_FUNC,
+                     GPIO_SPEED_FREQ_LOW);
 #ifdef UART1_HW_CIRCULAR
 
 #else
@@ -574,8 +584,9 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart) {
 #endif
 
 #ifdef UART1_HW_TX_PIN
-        enableClkGPIO((GPIO_TypeDef *)UART1_HW_TX_PORT);
-        initUartGPIO((GPIO_TypeDef *)UART1_HW_TX_PORT, UART1_HW_TX_PIN, UART1_HW_TX_ALTERNATE_FUNC, GPIO_SPEED_FREQ_LOW);
+        enableClkGPIO((GPIO_TypeDef *) UART1_HW_TX_PORT);
+        initUartGPIO((GPIO_TypeDef *) UART1_HW_TX_PORT, UART1_HW_TX_PIN, UART1_HW_TX_ALTERNATE_FUNC,
+                     GPIO_SPEED_FREQ_LOW);
 
 #endif
 
@@ -593,26 +604,28 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart) {
 #endif
 
 
-    }
-
-    else if (huart->Instance == USART2) {
+    } else if (huart->Instance == USART2) {
         __HAL_RCC_USART2_CLK_ENABLE();
 
 #ifdef UART2_HW_RX_PIN
-        enableClkGPIO((GPIO_TypeDef *)UART2_HW_RX_PORT);
-        initUartGPIO((GPIO_TypeDef *)UART2_HW_RX_PORT, UART2_HW_RX_PIN, UART2_HW_RX_ALTERNATE_FUNC, GPIO_SPEED_FREQ_LOW);
+        enableClkGPIO((GPIO_TypeDef *) UART2_HW_RX_PORT);
+        initUartGPIO((GPIO_TypeDef *) UART2_HW_RX_PORT, UART2_HW_RX_PIN, UART2_HW_RX_ALTERNATE_FUNC,
+                     GPIO_SPEED_FREQ_LOW);
 #endif
 
 #ifdef UART2_HW_TX_PIN
-        enableClkGPIO((GPIO_TypeDef *)UART2_HW_TX_PORT);
-        initUartGPIO((GPIO_TypeDef *)UART2_HW_TX_PORT, UART2_HW_TX_PIN, UART2_HW_TX_ALTERNATE_FUNC, GPIO_SPEED_FREQ_LOW);
+        enableClkGPIO((GPIO_TypeDef *) UART2_HW_TX_PORT);
+        initUartGPIO((GPIO_TypeDef *) UART2_HW_TX_PORT, UART2_HW_TX_PIN, UART2_HW_TX_ALTERNATE_FUNC,
+                     GPIO_SPEED_FREQ_LOW);
 #endif
 
 #if UART2_HW_FLOW_CONTROL == (USART_CR3_RTSE | USART_CR3_CTSE)
-        enableClkGPIO((GPIO_TypeDef *)UART2_HW_RTS_PORT);
-        initUartGPIO((GPIO_TypeDef *)UART2_HW_RTS_PORT, UART2_HW_RTS_PIN, UART2_HW_RTS_ALTERNATE_FUNC, GPIO_SPEED_FREQ_VERY_HIGH);
-        enableClkGPIO((GPIO_TypeDef *)UART2_HW_CTS_PORT);
-        initUartGPIO((GPIO_TypeDef *)UART2_HW_CTS_PORT, UART2_HW_CTS_PIN, UART2_HW_CTS_ALTERNATE_FUNC, GPIO_SPEED_FREQ_VERY_HIGH);
+        enableClkGPIO((GPIO_TypeDef *) UART2_HW_RTS_PORT);
+        initUartGPIO((GPIO_TypeDef *) UART2_HW_RTS_PORT, UART2_HW_RTS_PIN, UART2_HW_RTS_ALTERNATE_FUNC,
+                     GPIO_SPEED_FREQ_VERY_HIGH);
+        enableClkGPIO((GPIO_TypeDef *) UART2_HW_CTS_PORT);
+        initUartGPIO((GPIO_TypeDef *) UART2_HW_CTS_PORT, UART2_HW_CTS_PIN, UART2_HW_CTS_ALTERNATE_FUNC,
+                     GPIO_SPEED_FREQ_VERY_HIGH);
 #elif UART2_HW_FLOW_CONTROL == USART_CR3_RTSE
         enableClkGPIO((GPIO_TypeDef *)UART2_HW_CTS_PORT);
         initUartGPIO((GPIO_TypeDef *)UART2_HW_CTS_PORT, UART2_HW_CTS_PIN, UART2_HW_CTS_ALTERNATE_FUNC, GPIO_SPEED_FREQ_VERY_HIGH);
@@ -620,8 +633,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart) {
         enableClkGPIO((GPIO_TypeDef *)UART2_HW_RTS_PORT);
         initUartGPIO((GPIO_TypeDef *)UART2_HW_RTS_PORT, UART2_HW_RTS_PIN, UART2_HW_RTS_ALTERNATE_FUNC, GPIO_SPEED_FREQ_VERY_HIGH);
 #endif
-    }
-    else if (huart->Instance == USART3) {
+    } else if (huart->Instance == USART3) {
         __HAL_RCC_USART3_CLK_ENABLE();
 
 #ifdef UART3_HW_RX_PIN
@@ -646,9 +658,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart) {
         enableClkGPIO((GPIO_TypeDef *)UART3_HW_RTS_PORT);
         initUartGPIO((GPIO_TypeDef *)UART3_HW_RTS_PORT, UART3_HW_RTS_PIN, UART3_HW_RTS_ALTERNATE_FUNC, GPIO_SPEED_FREQ_VERY_HIGH);
 #endif
-    }
-
-    else if (huart->Instance == UART4) {
+    } else if (huart->Instance == UART4) {
         __HAL_RCC_UART4_CLK_ENABLE();
 
 #ifdef UART4_HW_RX_PIN
@@ -673,20 +683,21 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart) {
         enableClkGPIO((GPIO_TypeDef *)UART4_HW_RTS_PORT);
         initUartGPIO((GPIO_TypeDef *)UART4_HW_RTS_PORT, UART4_HW_RTS_PIN, UART4_HW_RTS_ALTERNATE_FUNC, GPIO_SPEED_FREQ_VERY_HIGH);
 #endif
-    }
-    else if (huart->Instance == UART5) {
+    } else if (huart->Instance == UART5) {
         __HAL_RCC_UART5_CLK_ENABLE();
 
 #ifdef UART5_HW_RX_PIN
-        enableClkGPIO((GPIO_TypeDef *)UART5_HW_RX_PORT);
-        initUartGPIO((GPIO_TypeDef *)UART5_HW_RX_PORT, UART5_HW_RX_PIN, UART5_HW_RX_ALTERNATE_FUNC, GPIO_SPEED_FREQ_LOW);
+        enableClkGPIO((GPIO_TypeDef *) UART5_HW_RX_PORT);
+        initUartGPIO((GPIO_TypeDef *) UART5_HW_RX_PORT, UART5_HW_RX_PIN, UART5_HW_RX_ALTERNATE_FUNC,
+                     GPIO_SPEED_FREQ_LOW);
 #endif
 
 #ifdef UART5_HW_TX_PIN
-        enableClkGPIO((GPIO_TypeDef *)UART5_HW_TX_PORT);
-        enableClkGPIO((GPIO_TypeDef *)UART5_HW_TX_PORT);
+        enableClkGPIO((GPIO_TypeDef *) UART5_HW_TX_PORT);
+        enableClkGPIO((GPIO_TypeDef *) UART5_HW_TX_PORT);
 
-        initUartGPIO((GPIO_TypeDef *)UART5_HW_TX_PORT, UART5_HW_TX_PIN, UART5_HW_TX_ALTERNATE_FUNC, GPIO_SPEED_FREQ_LOW);
+        initUartGPIO((GPIO_TypeDef *) UART5_HW_TX_PORT, UART5_HW_TX_PIN, UART5_HW_TX_ALTERNATE_FUNC,
+                     GPIO_SPEED_FREQ_LOW);
 #endif
 
 #if UART5_HW_FLOW_CONTROL == (USART_CR3_RTSE | USART_CR3_CTSE)
@@ -705,7 +716,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart) {
 
 #endif
 
-    uart_t* uart = getUartByHalHandle(huart);
+    uart_t *uart = getUartByHalHandle(huart);
     if (uart->dma.dmaHandleRx.Instance != NULL) {
         uint32_t dmaRequest = 0;
         //@todo in next release need to detectd GPDMA1 or GPDMA2 , because in current MCU GPDMA1_REQUEST equal GPDMA2_REQUEST but in next mcu its can be differents.
@@ -724,8 +735,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart) {
 
         if (uart->dma.dmaHandleRx.Init.Mode == DMA_LINKEDLIST_CIRCULAR) {
             initDmaCircularForUART(&uart->dma.dmaHandleRx, dmaRequest, 0);
-        }
-        else {
+        } else {
             initDmaForUART(&uart->dma.dmaHandleRx, dmaRequest, 0);
         }
     }
@@ -799,27 +809,24 @@ void initDmaForUART(DMA_HandleTypeDef *dmaHandle, uint32_t DMA_REQUEST, uint32_t
         dmaHandle->Init.Priority = DMA_CCR;
         dmaHandle->Init.SrcBurstLength = 1;
         dmaHandle->Init.DestBurstLength = 1;
-        dmaHandle->Init.TransferAllocatedPort = DMA_SRC_ALLOCATED_PORT1|DMA_DEST_ALLOCATED_PORT0;
+        dmaHandle->Init.TransferAllocatedPort = DMA_SRC_ALLOCATED_PORT1 | DMA_DEST_ALLOCATED_PORT0;
         dmaHandle->Init.TransferEventMode = DMA_TCEM_BLOCK_TRANSFER;
-        if (HAL_DMA_Init(dmaHandle) != HAL_OK)
-        {
+        if (HAL_DMA_Init(dmaHandle) != HAL_OK) {
             //@todo for debugging only
             while (1) {
 
             }
         }
-        UART_HandleTypeDef* huart = getUartHalHandleByDMA(dmaHandle->Instance);
+        UART_HandleTypeDef *huart = getUartHalHandleByDMA(dmaHandle->Instance);
         __HAL_LINKDMA(huart, hdmatx, *dmaHandle);
 
-        if (HAL_DMA_ConfigChannelAttributes(dmaHandle, DMA_CHANNEL_NPRIV) != HAL_OK)
-        {
+        if (HAL_DMA_ConfigChannelAttributes(dmaHandle, DMA_CHANNEL_NPRIV) != HAL_OK) {
             //@todo for debugging only
             while (1) {
 
             }
         }
-    }
-    else if (dmaUsingFor(dmaHandle->Instance) == DMA_USING_FOR_RX) {
+    } else if (dmaUsingFor(dmaHandle->Instance) == DMA_USING_FOR_RX) {
         dmaHandle->Init.Direction = DMA_PERIPH_TO_MEMORY;
         dmaHandle->Init.SrcInc = DMA_SINC_FIXED;
         dmaHandle->Init.DestInc = DMA_DINC_INCREMENTED;
@@ -828,20 +835,18 @@ void initDmaForUART(DMA_HandleTypeDef *dmaHandle, uint32_t DMA_REQUEST, uint32_t
         dmaHandle->Init.Priority = DMA_CCR;
         dmaHandle->Init.SrcBurstLength = 1;
         dmaHandle->Init.DestBurstLength = 1;
-        dmaHandle->Init.TransferAllocatedPort = DMA_SRC_ALLOCATED_PORT0|DMA_DEST_ALLOCATED_PORT1;
+        dmaHandle->Init.TransferAllocatedPort = DMA_SRC_ALLOCATED_PORT0 | DMA_DEST_ALLOCATED_PORT1;
         dmaHandle->Init.TransferEventMode = DMA_TCEM_BLOCK_TRANSFER;
-        if (HAL_DMA_Init(dmaHandle) != HAL_OK)
-        {
+        if (HAL_DMA_Init(dmaHandle) != HAL_OK) {
             //@todo for debugging only
             while (1) {
 
             }
         }
-        UART_HandleTypeDef* huart = getUartHalHandleByDMA(dmaHandle->Instance);
-        __HAL_LINKDMA(huart, hdmatx, *dmaHandle);
+        UART_HandleTypeDef *huart = getUartHalHandleByDMA(dmaHandle->Instance);
+        __HAL_LINKDMA(huart, hdmarx, *dmaHandle);
 
-        if (HAL_DMA_ConfigChannelAttributes(dmaHandle, DMA_CHANNEL_NPRIV) != HAL_OK)
-        {
+        if (HAL_DMA_ConfigChannelAttributes(dmaHandle, DMA_CHANNEL_NPRIV) != HAL_OK) {
             //@todo for debugging only
             while (1) {
 
@@ -853,9 +858,9 @@ void initDmaForUART(DMA_HandleTypeDef *dmaHandle, uint32_t DMA_REQUEST, uint32_t
 void initDmaCircularForUART(DMA_HandleTypeDef *dmaHandle, uint32_t DMA_REQUEST, uint32_t DMA_CCR) {
     dmaHandle->Init.Request = DMA_REQUEST;
     dmaHandle->Init.BlkHWRequest = DMA_BREQ_SINGLE_BURST;
-    UART_HandleTypeDef* huart = getUartHalHandleByDMA(dmaHandle->Instance);
-    uart_t* uart = getUartByHalHandle(huart);
-    DMA_NodeConfTypeDef NodeConfig= {0};
+    UART_HandleTypeDef *huart = getUartHalHandleByDMA(dmaHandle->Instance);
+    uart_t *uart = getUartByHalHandle(huart);
+    DMA_NodeConfTypeDef NodeConfig = {0};
 
     NodeConfig.NodeType = DMA_GPDMA_LINEAR_NODE;
     NodeConfig.Init.Request = GPDMA1_REQUEST_USART2_RX;
@@ -867,28 +872,25 @@ void initDmaCircularForUART(DMA_HandleTypeDef *dmaHandle, uint32_t DMA_REQUEST, 
     NodeConfig.Init.DestDataWidth = DMA_DEST_DATAWIDTH_BYTE;
     NodeConfig.Init.SrcBurstLength = 1;
     NodeConfig.Init.DestBurstLength = 1;
-    NodeConfig.Init.TransferAllocatedPort = DMA_SRC_ALLOCATED_PORT0|DMA_DEST_ALLOCATED_PORT1;
+    NodeConfig.Init.TransferAllocatedPort = DMA_SRC_ALLOCATED_PORT0 | DMA_DEST_ALLOCATED_PORT1;
     NodeConfig.Init.TransferEventMode = DMA_TCEM_BLOCK_TRANSFER;
     NodeConfig.Init.Mode = DMA_NORMAL;
     NodeConfig.TriggerConfig.TriggerPolarity = DMA_TRIG_POLARITY_MASKED;
     NodeConfig.DataHandlingConfig.DataExchange = DMA_EXCHANGE_NONE;
     NodeConfig.DataHandlingConfig.DataAlignment = DMA_DATA_RIGHTALIGN_ZEROPADDED;
-    if (HAL_DMAEx_List_BuildNode(&NodeConfig, &uart->dma.nodeRx) != HAL_OK)
-    {
-      while (1) {
-          //@todo ERROR handler
-      }
-    }
-
-    if (HAL_DMAEx_List_InsertNode(&uart->dma.listRx, NULL, &uart->dma.nodeRx) != HAL_OK)
-    {
+    if (HAL_DMAEx_List_BuildNode(&NodeConfig, &uart->dma.nodeRx) != HAL_OK) {
         while (1) {
             //@todo ERROR handler
         }
     }
 
-    if (HAL_DMAEx_List_SetCircularMode(&uart->dma.listRx) != HAL_OK)
-    {
+    if (HAL_DMAEx_List_InsertNode(&uart->dma.listRx, NULL, &uart->dma.nodeRx) != HAL_OK) {
+        while (1) {
+            //@todo ERROR handler
+        }
+    }
+
+    if (HAL_DMAEx_List_SetCircularMode(&uart->dma.listRx) != HAL_OK) {
         while (1) {
             //@todo ERROR handler
         }
@@ -900,15 +902,13 @@ void initDmaCircularForUART(DMA_HandleTypeDef *dmaHandle, uint32_t DMA_REQUEST, 
     dmaHandle->InitLinkedList.LinkAllocatedPort = DMA_LINK_ALLOCATED_PORT1;
     dmaHandle->InitLinkedList.TransferEventMode = DMA_TCEM_BLOCK_TRANSFER;
     dmaHandle->InitLinkedList.LinkedListMode = DMA_LINKEDLIST_CIRCULAR;
-    if (HAL_DMAEx_List_Init(dmaHandle) != HAL_OK)
-    {
+    if (HAL_DMAEx_List_Init(dmaHandle) != HAL_OK) {
         while (1) {
             //@todo ERROR handler
         }
     }
 
-    if (HAL_DMAEx_List_LinkQ(dmaHandle, &uart->dma.listRx) != HAL_OK)
-    {
+    if (HAL_DMAEx_List_LinkQ(dmaHandle, &uart->dma.listRx) != HAL_OK) {
         while (1) {
             //@todo ERROR handler
         }
@@ -916,8 +916,7 @@ void initDmaCircularForUART(DMA_HandleTypeDef *dmaHandle, uint32_t DMA_REQUEST, 
 
     __HAL_LINKDMA(huart, hdmarx, *dmaHandle);
 
-    if (HAL_DMA_ConfigChannelAttributes(dmaHandle, DMA_CHANNEL_NPRIV) != HAL_OK)
-    {
+    if (HAL_DMA_ConfigChannelAttributes(dmaHandle, DMA_CHANNEL_NPRIV) != HAL_OK) {
         while (1) {
             //@todo ERROR handler
         }
@@ -925,75 +924,123 @@ void initDmaCircularForUART(DMA_HandleTypeDef *dmaHandle, uint32_t DMA_REQUEST, 
 }
 
 void setPriorityDMA(DMA_Channel_TypeDef *dmaChannel, uint8_t priority) {
-      if (dmaChannel == GPDMA1_Channel0) {
+    if (dmaChannel == GPDMA1_Channel0) {
         HAL_NVIC_SetPriority(GPDMA1_Channel0_IRQn, priority, 0);
         HAL_NVIC_EnableIRQ(GPDMA1_Channel0_IRQn);
-    }
-    else if (dmaChannel == GPDMA1_Channel1) {
+    } else if (dmaChannel == GPDMA1_Channel1) {
         HAL_NVIC_SetPriority(GPDMA1_Channel1_IRQn, priority, 0);
         HAL_NVIC_EnableIRQ(GPDMA1_Channel1_IRQn);
-    }
-    else if (dmaChannel == GPDMA1_Channel2) {
+    } else if (dmaChannel == GPDMA1_Channel2) {
         HAL_NVIC_SetPriority(GPDMA1_Channel2_IRQn, priority, 0);
         HAL_NVIC_EnableIRQ(GPDMA1_Channel2_IRQn);
-    }
-    else if (dmaChannel == GPDMA1_Channel3) {
+    } else if (dmaChannel == GPDMA1_Channel3) {
         HAL_NVIC_SetPriority(GPDMA1_Channel3_IRQn, priority, 0);
         HAL_NVIC_EnableIRQ(GPDMA1_Channel3_IRQn);
-    }
-    else if (dmaChannel == GPDMA1_Channel4) {
+    } else if (dmaChannel == GPDMA1_Channel4) {
         HAL_NVIC_SetPriority(GPDMA1_Channel4_IRQn, priority, 0);
         HAL_NVIC_EnableIRQ(GPDMA1_Channel4_IRQn);
-    }
-    else if (dmaChannel == GPDMA1_Channel5) {
+    } else if (dmaChannel == GPDMA1_Channel5) {
         HAL_NVIC_SetPriority(GPDMA1_Channel5_IRQn, priority, 0);
         HAL_NVIC_EnableIRQ(GPDMA1_Channel5_IRQn);
-    }
-    else if (dmaChannel == GPDMA1_Channel6) {
+    } else if (dmaChannel == GPDMA1_Channel6) {
         HAL_NVIC_SetPriority(GPDMA1_Channel6_IRQn, priority, 0);
         HAL_NVIC_EnableIRQ(GPDMA1_Channel6_IRQn);
-    }
-    else if (dmaChannel == GPDMA1_Channel7) {
+    } else if (dmaChannel == GPDMA1_Channel7) {
         HAL_NVIC_SetPriority(GPDMA1_Channel7_IRQn, priority, 0);
         HAL_NVIC_EnableIRQ(GPDMA1_Channel7_IRQn);
-    }
-    else if (dmaChannel == GPDMA2_Channel0) {
+    } else if (dmaChannel == GPDMA2_Channel0) {
         HAL_NVIC_SetPriority(GPDMA2_Channel0_IRQn, priority, 0);
         HAL_NVIC_EnableIRQ(GPDMA2_Channel0_IRQn);
-    }
-    else if (dmaChannel == GPDMA2_Channel1) {
+    } else if (dmaChannel == GPDMA2_Channel1) {
         HAL_NVIC_SetPriority(GPDMA2_Channel1_IRQn, priority, 0);
         HAL_NVIC_EnableIRQ(GPDMA2_Channel1_IRQn);
-    }
-    else if (dmaChannel == GPDMA2_Channel2) {
+    } else if (dmaChannel == GPDMA2_Channel2) {
         HAL_NVIC_SetPriority(GPDMA2_Channel2_IRQn, priority, 0);
         HAL_NVIC_EnableIRQ(GPDMA2_Channel2_IRQn);
-    }
-    else if (dmaChannel == GPDMA2_Channel3) {
+    } else if (dmaChannel == GPDMA2_Channel3) {
         HAL_NVIC_SetPriority(GPDMA2_Channel3_IRQn, priority, 0);
         HAL_NVIC_EnableIRQ(GPDMA2_Channel3_IRQn);
-    }
-    else if (dmaChannel == GPDMA2_Channel4) {
+    } else if (dmaChannel == GPDMA2_Channel4) {
         HAL_NVIC_SetPriority(GPDMA2_Channel4_IRQn, priority, 0);
         HAL_NVIC_EnableIRQ(GPDMA2_Channel4_IRQn);
-    }
-    else if (dmaChannel == GPDMA2_Channel5) {
+    } else if (dmaChannel == GPDMA2_Channel5) {
         HAL_NVIC_SetPriority(GPDMA2_Channel5_IRQn, priority, 0);
         HAL_NVIC_EnableIRQ(GPDMA2_Channel5_IRQn);
-    }
-    else if (dmaChannel == GPDMA2_Channel6) {
+    } else if (dmaChannel == GPDMA2_Channel6) {
         HAL_NVIC_SetPriority(GPDMA2_Channel6_IRQn, priority, 0);
         HAL_NVIC_EnableIRQ(GPDMA2_Channel6_IRQn);
-    }
-    else if (dmaChannel == GPDMA2_Channel7) {
+    } else if (dmaChannel == GPDMA2_Channel7) {
         HAL_NVIC_SetPriority(GPDMA2_Channel7_IRQn, priority, 0);
         HAL_NVIC_EnableIRQ(GPDMA2_Channel7_IRQn);
     }
 }
 
+void resetUART(uart_t *uart) {
+    uart->countTC = 0;
+    uint8_t* tmpPnt = uart->huart.pRxBuffPtr;
+    uint16_t tmpSize = uart->huart.RxXferSize;
+    uart->lastWrtPnt = uart->huart.pRxBuffPtr;
+    HAL_UART_DMAStop(&uart->huart);
+    uartStartReceive(uart->huart.Instance, tmpPnt, tmpSize);
+}
+
+
+static void handleCircularUart(uart_t *uart, uint16_t size) {
+    if (uart->huart.RxEventType == HAL_UART_RXEVENT_TC) {
+        uart->countTC++;
+        return;
+    } else if (uart->huart.RxEventType == HAL_UART_RXEVENT_IDLE) {
+
+        if (uart->countTC > 1) {
+            resetUART(uart);
+            return;
+        }
+
+        uart->countTC = 0;
+        uint8_t *tmpPos = uart->lastWrtPnt;
+        uint32_t realSize = 0;
+        bool overHead = false;
+
+        if (uart->lastWrtPnt < (uart->huart.pRxBuffPtr + size)) {
+            realSize = size - (uart->lastWrtPnt - uart->huart.pRxBuffPtr);
+            uart->lastWrtPnt += realSize;
+        } else {
+            overHead = true;
+            realSize = uart->huart.pRxBuffPtr + uart->huart.RxXferSize - uart->lastWrtPnt + size;
+            uart->lastWrtPnt = uart->huart.pRxBuffPtr + size;
+        }
+
+        if (uart->lastWrtPnt == uart->huart.pRxBuffPtr + size) {
+            uart->lastWrtPnt = uart->huart.pRxBuffPtr;
+        }
+
+        if (overHead == false) {
+            uart->dataCb(tmpPos, realSize, NULL, 0);
+        } else {
+            uart->dataCb(tmpPos, uart->huart.pRxBuffPtr + size - tmpPos, uart->huart.pRxBuffPtr, size);
+        }
+    }
+}
+
+
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size) {
 
-    uart_t* uart = getUartByHalHandle(huart);
+    uart_t *uart = getUartByHalHandle(huart);
+    if (huart->hdmarx->Init.Mode == DMA_NORMAL) {
+        if (uart->dataCb != NULL)
+            uart->dataCb((uint8_t *) huart->pRxBuffPtr, NULL, size, 0);
+    } else {
+        if (uart->dataCb != NULL) {
+
+        }
+    }
+
+}
+
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
 
 
 }
+
+
+

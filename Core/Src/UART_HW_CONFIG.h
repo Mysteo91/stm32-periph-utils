@@ -8,6 +8,24 @@
 #if STM32H523xx
 #include "stm32h523xx.h"
 
+/**
+  ******************************************************************************
+  * @file    UART_HW_CONFIG_template.h
+  * @brief   This file provides defines for the configuration
+  *          of the UARTs.
+  ******************************************************************************
+  * @attention
+  *
+  * NON_CIRCULAR mode recommended for devices that using Protocol with fixed data size
+  * and for which the request-response mode is clearly implemented
+  *
+  * For other situation please use Circular-Mode. This mode provides non-stop data reception until the user stops the receiving
+  * or until an error occurs in the communication protocol.
+  *
+  ******************************************************************************
+  */
+
+
 #define PIN_0                 0x0001
 #define PIN_1                 0x0002
 #define PIN_2                 0x0004
