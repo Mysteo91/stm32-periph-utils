@@ -104,9 +104,8 @@ int main(void)
   MX_GPDMA1_Init();
   MX_CRC_Init();
   MX_ICACHE_Init();
-  MX_IWDG_Init();
+  //MX_IWDG_Init();
   MX_TIM8_Init();
-  MX_DCACHE1_Init();
   //MX_USART1_UART_Init();
   uartInit(USART1, 921600, 0, modemRxDataCb, modemUartErrorCb);
 

@@ -465,8 +465,11 @@ bool uartStartReceive(USART_TypeDef *usart, const uint8_t *dst, uint16_t size) {
     UART_HandleTypeDef *huart = getUartHalHandleByUSART(usart);
     if (huart->hdmarx->Init.Mode == DMA_NORMAL) {
         __HAL_DMA_DISABLE_IT(huart->hdmarx, DMA_IT_HT);
+        __HAL_DMA_ENABLE_IT(huart->hdmarx, DMA_IT_TC);
         return HAL_UART_Receive_DMA(huart, (uint8_t *) dst, size) == HAL_OK;
     } else {
+        uart_t *uart = getUartByHalHandle(huart);
+        uart->lastWrtPnt = dst;
         return HAL_UARTEx_ReceiveToIdle_DMA(huart, (uint8_t *) dst, size) == HAL_OK;
     }
 }
@@ -513,6 +516,10 @@ bool uartInit(USART_TypeDef *usart, uint32_t baudrate, uint8_t NVIC_Priority, ua
         return false;
     }
 
+    if (UART_WaitOnFlagUntilTimeout(huart, UART_FLAG_IDLE, RESET, HAL_GetTick(), 2000) == HAL_OK ) {
+        __HAL_UART_CLEAR_FLAG(huart, UART_FLAG_IDLE);
+        UART_WaitOnFlagUntilTimeout(huart, UART_FLAG_IDLE, SET, HAL_GetTick(), 2000);
+    }
 
     if (usart == USART1) {
         HAL_NVIC_EnableIRQ(USART1_IRQn);
@@ -864,7 +871,7 @@ void initDmaCircularForUART(DMA_HandleTypeDef *dmaHandle, uint32_t DMA_REQUEST, 
     DMA_NodeConfTypeDef NodeConfig = {0};
 
     NodeConfig.NodeType = DMA_GPDMA_LINEAR_NODE;
-    NodeConfig.Init.Request = GPDMA1_REQUEST_USART2_RX;
+    NodeConfig.Init.Request = DMA_REQUEST;
     NodeConfig.Init.BlkHWRequest = DMA_BREQ_SINGLE_BURST;
     NodeConfig.Init.Direction = DMA_PERIPH_TO_MEMORY;
     NodeConfig.Init.SrcInc = DMA_SINC_FIXED;
@@ -1027,15 +1034,13 @@ static void handleCircularUart(uart_t *uart, uint16_t size) {
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size) {
 
     uart_t *uart = getUartByHalHandle(huart);
-    if (huart->hdmarx->Init.Mode == DMA_NORMAL) {
-        if (uart->dataCb != NULL)
-            uart->dataCb((uint8_t *) huart->pRxBuffPtr, NULL, size, 0);
-    } else {
-        if (uart->dataCb != NULL) {
+    handleCircularUart(uart, size);
 
-        }
-    }
+}
 
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+    uart_t *uart = getUartByHalHandle(huart);
+    uart->dataCb((uint8_t *) huart->pRxBuffPtr, huart->RxXferSize, NULL, 0);
 }
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
