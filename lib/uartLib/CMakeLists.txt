@@ -17,15 +17,17 @@ endif ()
 # Setup aviaradar as lib
 file(GLOB_RECURSE UART_HW_SOURCES
         "src/*.*"
+        "${HAL_DRIVERS}/Src/*.*"
 )
 
 
-
+add_definitions(-DUSE_HAL_DRIVER -DSTM32H523xx)
 add_library(uart_hw_hal_lib STATIC ${UART_HW_SOURCES} )
 
 target_compile_definitions(uart_hw_hal_lib PUBLIC UART_APP_CONFIG="${UART_HW_CONFIG_FILE}")
 target_include_directories(uart_hw_hal_lib
 
-        PRIVATE  src
-        PUBLIC src/user_layer
+        PRIVATE  src ${HAL_DRIVERS}/Inc
+        PUBLIC src/user_layer ${HAL_CONFIG_FILE_DIR}
 )
+target_link_libraries(uart_hw_hal_lib PUBLIC STM32_Drivers)
