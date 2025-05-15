@@ -3,6 +3,11 @@ set(CMAKE_SYSTEM_NAME Generic)
 set(CMAKE_SYSTEM_VERSION 1)
 cmake_minimum_required(VERSION 3.29)
 
+set (RX_BUFFER_SIZE 512)
+math ( EXPR BYTES_COUNT_FOR_TRANSMIT_IN_TESTS  "${RX_BUFFER_SIZE} * 20" )
+
+add_definitions(-DRX_BUFFER_SIZE=${RX_BUFFER_SIZE}U -DBYTES_COUNT_FOR_TRANSMIT=${BYTES_COUNT_FOR_TRANSMIT_IN_TESTS}UL)
+
 if (BUILD_TESTS)
     project(TESTS)
     add_subdirectory(tests)

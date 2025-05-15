@@ -18,7 +18,6 @@ FetchContent_MakeAvailable(googletest)
 
 
 add_executable(test1.exe
-        src/sample1.cpp
         src/sample1_test.cpp
 )
 target_link_libraries(test1.exe gtest_main)

@@ -39,7 +39,7 @@ endif ()
 
 add_executable(${PROJECT_NAME}.elf ${SOURCES} ${LINKER_SCRIPT})
 
-target_link_libraries(${PROJECT_NAME}.elf PRIVATE STM32_Drivers  -Wl,--whole-archive uart_hw_hal_lib -Wl,--no-whole-archive  startup)
+target_link_libraries(${PROJECT_NAME}.elf PRIVATE STM32_Drivers  -Wl,--whole-archive uartLib -Wl,--no-whole-archive  startup)
 
 set(HEX_FILE ${PROJECT_BINARY_DIR}/${PROJECT_NAME}.hex)
 set(BIN_FILE ${PROJECT_BINARY_DIR}/${PROJECT_NAME}.bin)

@@ -87,7 +87,7 @@ public:
 
 //-----------------------------------------------------------------------------
 #ifdef CE_WINDOWS
-	#define READ_TIMEOUT 10      // milliseconds
+	#define READ_TIMEOUT 50      // milliseconds
 #else
 	#include <unistd.h>
 	#include <fcntl.h>

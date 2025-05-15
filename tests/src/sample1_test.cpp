@@ -39,13 +39,14 @@
 //
 // Don't forget gtest.h, which declares the testing framework.
 
-#include "sample1.h"
 #include <iostream>
 #include <string>
 #include <limits.h>
 #include "serial.h"
 #include "gtest/gtest.h"
+#include <random>
 
+ceSerial serial;
 
 namespace {
 
@@ -77,66 +78,29 @@ namespace {
 // Tests Factorial().
 
 // Tests factorial of negative numbers.
-TEST(FactorialTest, Negative) {
-  // This test is named "Negative", and belongs to the "FactorialTest"
-  // test case.
-  EXPECT_EQ(1, Factorial(-5));
-  EXPECT_EQ(1, Factorial(-1));
-  EXPECT_GT(Factorial(-10), 0);
 
-  // <TechnicalDetails>
-  //
-  // EXPECT_EQ(expected, actual) is the same as
-  //
-  //   EXPECT_TRUE((expected) == (actual))
-  //
-  // except that it will print both the expected value and the actual
-  // value when the assertion fails.  This is very helpful for
-  // debugging.  Therefore in this case EXPECT_EQ is preferred.
-  //
-  // On the other hand, EXPECT_TRUE accepts any Boolean expression,
-  // and is thus more general.
-  //
-  // </TechnicalDetails>
+TEST(UartTest, RandomByte) {
+  std::random_device engine;
+  char symbolTx = 0;
+  char symbolRx;
+  bool success;
+  for (uint32_t i = 0; i < BYTES_COUNT_FOR_TRANSMIT; i++) {
+    while ((symbolTx = engine() ) == 0) {
+
+    }
+    if (serial.Write(&symbolTx)) {
+      symbolRx = serial.ReadChar(success);
+      if (success) {
+        ASSERT_EQ(symbolTx, symbolRx);
+      }
+      else
+        ASSERT_EQ(success, true);
+    }
+    else
+      FAIL();
+  }
 }
 
-// Tests factorial of 0.
-TEST(FactorialTest, Zero) { EXPECT_EQ(1, Factorial(0)); }
-
-// Tests factorial of positive numbers.
-TEST(FactorialTest, Positive) {
-  EXPECT_EQ(1, Factorial(1));
-  EXPECT_EQ(2, Factorial(2));
-  EXPECT_EQ(6, Factorial(3));
-  EXPECT_EQ(40320, Factorial(8));
-}
-
-// Tests IsPrime()
-
-// Tests negative input.
-TEST(IsPrimeTest, Negative) {
-  // This test belongs to the IsPrimeTest test case.
-
-  EXPECT_FALSE(IsPrime(-1));
-  EXPECT_FALSE(IsPrime(-2));
-  EXPECT_FALSE(IsPrime(INT_MIN));
-}
-
-// Tests some trivial cases.
-TEST(IsPrimeTest, Trivial) {
-  EXPECT_FALSE(IsPrime(0));
-  EXPECT_FALSE(IsPrime(1));
-  EXPECT_TRUE(IsPrime(2));
-  EXPECT_TRUE(IsPrime(3));
-}
-
-// Tests positive input.
-TEST(IsPrimeTest, Positive) {
-  EXPECT_FALSE(IsPrime(4));
-  EXPECT_TRUE(IsPrime(5));
-  EXPECT_FALSE(IsPrime(6));
-  EXPECT_TRUE(IsPrime(23));
-}
 }  // namespace
 
 using namespace std;
@@ -145,20 +109,31 @@ using namespace std;
 
 
 int main(int argc, char **argv) {
-  cout << "Please choose COM port:" << endl;
-
-  cout << "i.e COMx for win / /dev/ttyXXXX for linux: ";
-  string portName;
-  cin >> portName;
-  ceSerial serial("\\\\.\\" + portName,9600,8,'N',1);
-  cout << "Trying to open " << portName << "...";
-  serial.SetPortName(portName);
+  std::string serialName ;
+  if (argc <= 2) {
+    cout << "Please run tests with serialport name i.e COM2" << endl;
+    return -1;
+  }
+  serialName.append(argv[1]);
+  size_t npos = serialName.find("COM",0);
+  if ( npos == std::string::npos || npos != 0) {
+    cout << "You run tests with" << serialName << "it is not corresponding to COMx" << endl;
+    return -1;
+  }
+  serial = ceSerial("\\\\.\\" + serialName,921600,8,'N',1);
+  cout << "Trying to open " << serialName << "...";
   if (serial.Open() == 0 ) {
     cout << "OK" << endl;
+  }
+  else {
+    cout << "Cant Open" << serialName << endl;
+    return -1;
   }
   testing::InitGoogleTest();
   RUN_ALL_TESTS();
 }
+
+
 
 // Step 3. Call RUN_ALL_TESTS() in main().
 //
